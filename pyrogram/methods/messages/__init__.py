@@ -61,6 +61,7 @@ from .send_dice import SendDice
 from .send_document import SendDocument
 from .send_location import SendLocation
 from .send_media_group import SendMediaGroup
+from .send_long_message import SendLongMessage
 from .send_message import SendMessage
 from .send_paid_media import SendPaidMedia
 from .send_paid_reaction import SendPaidReaction
@@ -100,6 +101,7 @@ class Messages(
     SendAnimation,
     SendLocation,
     SendMediaGroup,
+    SendLongMessage,
     SendMessage,
     SendPaidMedia,
     SendPaidReaction,

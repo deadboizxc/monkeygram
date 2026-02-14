@@ -16,6 +16,7 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with Pyrogram.  If not, see <http://www.gnu.org/licenses/>.
 
+import asyncio
 import logging
 from datetime import datetime
 from functools import partial
@@ -4312,6 +4313,106 @@ class Message(Object, Update):
         )
 
     edit = edit_text
+
+    async def edit_long_message(
+        self,
+        text: str,
+        parse_mode: Optional["enums.ParseMode"] = None,
+        max_length: int = 4096,
+        delay: float = 0.5,
+        preserve_lines: bool = True,
+        disable_web_page_preview: bool = True
+    ) -> List["Message"]:
+        """Bound method *edit_long_message* of :obj:`~pyrogram.types.Message`.
+
+        Edit long messages by splitting them into parts if they exceed the maximum length.
+        The first part will edit the current message, and remaining parts will be sent as new messages.
+
+        Example:
+            .. code-block:: python
+
+                long_text = "Very long text..." * 1000
+                await message.edit_long_message(long_text)
+
+        Parameters:
+            text (``str``):
+                New text of the message. Will be split into parts if its length exceeds max_length.
+
+            parse_mode (:obj:`~pyrogram.enums.ParseMode`, *optional*):
+                By default, texts are parsed using both Markdown and HTML styles.
+
+            max_length (``int``, *optional*):
+                Maximum length of a single message. Defaults to 4096.
+
+            delay (``float``, *optional*):
+                Delay between sending each part (in seconds). Defaults to 0.5.
+
+            preserve_lines (``bool``, *optional*):
+                If True, preserve line formatting when splitting. Defaults to True.
+
+            disable_web_page_preview (``bool``, *optional*):
+                Disables link previews. Defaults to True.
+
+        Returns:
+            List of :obj:`~pyrogram.types.Message`: The edited/sent messages.
+
+        Raises:
+            RPCError: In case of a Telegram RPC error.
+        """
+        # Split text into parts while preserving lines
+        if preserve_lines:
+            parts = []
+            current = ""
+            for line in text.split('\n'):
+                if len(current) + len(line) + 1 > max_length:
+                    if current:
+                        parts.append(current)
+                        current = line
+                    else:
+                        parts.extend([line[i:i + max_length] for i in range(0, len(line), max_length)])
+                else:
+                    current = '\n'.join([current, line]) if current else line
+            if current:
+                parts.append(current)
+        else:
+            parts = [text[i:i + max_length] for i in range(0, len(text), max_length)]
+
+        # Edit/send messages in parts
+        messages = []
+        for i, part in enumerate(parts):
+            try:
+                if i == 0:
+                    # Edit the first message
+                    msg = await self._client.edit_message_text(
+                        chat_id=self.chat.id,
+                        message_id=self.id,
+                        text=part,
+                        parse_mode=parse_mode,
+                        disable_web_page_preview=disable_web_page_preview
+                    )
+                else:
+                    # Send new messages for the remaining parts
+                    msg = await self._client.send_message(
+                        chat_id=self.chat.id,
+                        text=part,
+                        parse_mode=parse_mode,
+                        disable_web_page_preview=disable_web_page_preview
+                    )
+                messages.append(msg)
+                # Delay between sending parts
+                if i < len(parts) - 1 and delay > 0:
+                    await asyncio.sleep(delay)
+            except Exception:
+                # If an error occurs, send the message normally
+                msg = await self._client.send_message(
+                    chat_id=self.chat.id,
+                    text=part,
+                    parse_mode=parse_mode,
+                    disable_web_page_preview=disable_web_page_preview
+                )
+                messages.append(msg)
+
+        return messages
 
     async def edit_caption(
         self,

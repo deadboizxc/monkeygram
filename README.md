@@ -33,6 +33,24 @@ identity (bot API alternative) using Python.
 - **Async**: Fully asynchronous (also usable synchronously if wanted, for convenience).
 - **Powerful**: Full access to Telegram's API to execute any official client action and more.
 
+### Monkeygram Extensions
+
+This fork includes additional methods for handling long messages:
+
+``` python
+# Send long messages (auto-split if > 4096 chars)
+await client.send_long_message(chat_id, very_long_text)
+
+# Edit with auto-split
+await message.edit_long_message(very_long_text)
+```
+
+Parameters:
+- `max_length` - Maximum length per message (default: 4096)
+- `delay` - Delay between sending parts (default: 0.5s)
+- `preserve_lines` - Preserve line formatting when splitting (default: True)
+- `disable_web_page_preview` - Disable link previews (default: True)
+
 ### Installing
 
 Stable version
